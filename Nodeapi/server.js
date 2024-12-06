@@ -2,6 +2,9 @@
 const express = require('express');
 const db = require('./db'); // Import the database connection
 
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+
 const app = express();
 const port = 3009;
 // Middleware to parse JSON bodies
@@ -118,8 +121,41 @@ app.delete('/Cijfers/:id', (req, res) => {
 });
 
 
+// Login endpoint voor studenten
 
+// Login endpoint voor studenten
+app.post('/studenten/login', (req, res) => {
+    const { email, wachtwoord } = req.body;
 
+    console.log('Inloggen met email:', email); // Log de e-mail die wordt gebruikt om in te loggen
+
+    // Haal de student op met het opgegeven e-mailadres
+    db.query('SELECT * FROM Studenten WHERE Email = ?', [email], (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        console.log('Query Result:', results); // Log de resultaten van de query
+        if (results.length === 0) {
+            return res.status(401).json({ message: 'Ongeldige inloggegevens' });
+        }
+
+        const student = results[0];
+
+        // Vergelijk het wachtwoord met het gehashte wachtwoord in de database
+        bcrypt.compare(wachtwoord, student.Wachtwoord, (err, match) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            console.log('Wachtwoord Match:', match); // Log of het wachtwoord overeenkomt
+            if (!match) {
+                return res.status(401).json({ message: 'Ongeldige inloggegevens' });
+            }
+
+            // Login succesvol, stuur de student gegevens terug
+            res.json({ message: 'Login succesvol', student });
+        });
+    });
+});
 
 app.get('/Studenten', (req, res) => {
     console.log('Received request for /Studenten');
@@ -152,13 +188,22 @@ app.get('/Studenten/:id', (req, res) => {
 app.post('/Studenten', (req, res) => {
     const { Voornaam, Tussenvoegsel, Achternaam, Wachtwoord, Email, Geboortedatum, Adres, KlasID } = req.body;
 
-    const insertQuery = 'INSERT INTO Studenten (Voornaam, Tussenvoegsel, Achternaam, Wachtwoord, Email, Geboortedatum, Adres, KlasID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-    db.query(insertQuery, [Voornaam, Tussenvoegsel, Achternaam, Wachtwoord, Email, Geboortedatum, Adres, KlasID], (err, results) => {
+    // Hash het wachtwoord
+    bcrypt.hash(Wachtwoord, 10, (err, hashedPassword) => {
         if (err) {
-            console.error('Database insert error:', err);
-            return res.status(500).send('Internal Server Error');
+            return res.status(500).json({ error: err.message });
         }
-        res.status(201).json({ message: 'Student toegevoegd', studentId: results.insertId });
+        console.log('Gehasht Wachtwoord:', hashedPassword); // Log het gehashte wachtwoord
+        // Sla het gehashte wachtwoord op in de database
+
+        const insertQuery = 'INSERT INTO Studenten (Voornaam, Tussenvoegsel, Achternaam, Wachtwoord, Email, Geboortedatum, Adres, KlasID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+        db.query(insertQuery, [Voornaam, Tussenvoegsel, Achternaam, hashedPassword, Email, Geboortedatum, Adres, KlasID], (err, results) => {
+            if (err) {
+                console.error('Database insert error:', err);
+                return res.status(500).send('Internal Server Error');
+            }
+            res.status(201).json({ message: 'Student toegevoegd', studentId: results.insertId });
+        });
     });
 });
 // put student
@@ -215,7 +260,61 @@ app.delete('/Studenten/:id', (req, res) => {
     });
 });
 
+// Post docent
+app.post('/docenten', (req, res) => {
+    const { Tussenvoegsel, Wachtwoord, Email, Voornaam, Vakgebied, Telefoonnummer, Achternaam } = req.body;
 
+    // Hash het wachtwoord
+    bcrypt.hash(Wachtwoord, 10, (err, hashedPassword) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        console.log('Gehasht Wachtwoord:', hashedPassword); // Log het gehashte wachtwoord
+        // Sla het gehashte wachtwoord op in de database
+
+
+        const query = 'INSERT INTO Docenten (Tussenvoegsel, Wachtwoord, Email, Voornaam, Vakgebied, Telefoonnummer, Achternaam) VALUES (?, ?, ?, ?, ?, ?, ?)';
+        db.query(query, [Tussenvoegsel, hashedPassword, Email, Voornaam, Vakgebied, Telefoonnummer, Achternaam], (err, results) => {
+            if (err) {
+                console.error('Database insert error:', err); // Verbeterde foutlogging
+                return res.status(500).json({ error: 'Interne serverfout' });
+            }
+            res.status(201).json({ message: 'Docent toegevoegd', DocentID: results.insertId });
+        });
+    });
+});
+
+// Login endpoint voor docenten
+app.post('/docenten/login', (req, res) => {
+    const { email, wachtwoord } = req.body;
+
+    console.log('Inloggen met email:', email); // Log de email die wordt gebruikt om in te loggen
+
+    db.query('SELECT * FROM Docenten WHERE Email = ?', [email], (err, results) => {
+        if (err) {
+            console.error('Database query error:', err); // Verbeterde foutlogging
+            return res.status(500).json({ error: 'Interne serverfout' });
+        }
+        if (results.length === 0) {
+            return res.status(401).json({ message: 'Ongeldige inloggegevens' });
+        }
+
+        const docent = results[0];
+
+        bcrypt.compare(wachtwoord, docent.Wachtwoord, (err, match) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            console.log('Wachtwoord Match:', match); // Log of het wachtwoord overeenkomt
+            if (!match) {
+                return res.status(401).json({ message: 'Ongeldige inloggegevens' });
+            }
+
+            // Login succesvol, stuur de student gegevens terug
+            res.json({ message: 'Login succesvol', docent });
+        });
+    });
+});
 
 
 
@@ -247,17 +346,6 @@ app.get('/docenten/:id', (req, res) => {
     });
 });
 
-// Endpoint om een nieuwe docent toe te voegen
-app.post('/docenten', (req, res) => {
-    const { Tussenvoegsel, Wachtwoord, Email, Voornaam, Vakgebied, Telefoonnummer, Achternaam } = req.body;
-    const query = 'INSERT INTO Docenten (Tussenvoegsel, Wachtwoord, Email, Voornaam, Vakgebied, Telefoonnummer, Achternaam) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    db.query(query, [Tussenvoegsel, Wachtwoord, Email, Voornaam, Vakgebied, Telefoonnummer, Achternaam], (err, results) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.status(201).json({ message: 'Docent toegevoegd', DocentID: results.insertId });
-    });
-});
 
 // Endpoint om een bestaande docent bij te werken
 app.put('/docenten/:id', (req, res) => {
