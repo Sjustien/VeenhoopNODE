@@ -1,22 +1,36 @@
 // server.js
 const express = require('express');
+const cors = require('cors');
 const db = require('./db'); // Import the database connection
-
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const port = 3009;
+require('dotenv').config();
+
+
+const corsOptions = {
+    origin: 'http://localhost:3000', // Specifieke origin
+    credentials: true 
+  };
 
 const app = express();
-const port = 3009;
-// Middleware to parse JSON bodies
-app.use(express.json());
+app.use(cors(corsOptions)); // To allow cross-origin requests
+app.use(express.json()); // To parse JSON bodies
 
-// Define a simple route
-app.get('/', (req, res) => {
-    res.send('Hello, World!');
-});
+
+const apiKeyMiddleware = (req, res, next) => {
+    const apiKey = req.headers['api-key']; // API key is sent in the 'x-api-key' header
+
+    if (!apiKey || apiKey !== process.env.API_KEY) {
+        return res.status(403).send('Forbidden: Invalid API Key');
+    }
+    next(); // Proceed to the next middleware/route handler
+};  
+
+
 
 // Example route to fetch data from a table
-app.get('/Cijfers', (req, res) => {
+app.get('/Cijfers', apiKeyMiddleware, (req, res) => {
     console.log('Received request for /Cijfers');
     db.query('SELECT * FROM Cijfers', (err, results) => {
         if (err) {
@@ -28,8 +42,10 @@ app.get('/Cijfers', (req, res) => {
     });
 });
 
+
+
 // get cijfers by id
-app.get('/Cijfers/:id', (req, res) => {
+app.get('/Cijfers/:id', apiKeyMiddleware, (req, res) => {
     const cijferId = req.params.id;
     db.query('SELECT * FROM Cijfers WHERE CijferID = ?', [cijferId], (err, results) => {
         if (err) {
@@ -43,7 +59,7 @@ app.get('/Cijfers/:id', (req, res) => {
     });
 });
 // post cijfers
-app.post('/Cijfers', (req, res) => {
+app.post('/Cijfers', apiKeyMiddleware, (req, res) => {
     const { StudentID, VakID, Blok, Cijfer, IngevoerdDoorDocentID, IngevoerdOp } = req.body;
 
     const insertQuery = 'INSERT INTO Cijfers (StudentID, VakID, Blok, Cijfer, IngevoerdDoorDocentID, IngevoerdOp) VALUES (?, ?, ?, ?, ?, ?)';
@@ -56,7 +72,7 @@ app.post('/Cijfers', (req, res) => {
     });
 });
 // put cijfers
-app.put('/Cijfers/:id', (req, res) => {
+app.put('/Cijfers/:id', apiKeyMiddleware, (req, res) => {
     const cijferId = req.params.id;
     const { StudentID, VakID, Blok, Cijfer, IngevoerdDoorDocentID, IngevoerdOp } = req.body;
 
@@ -106,7 +122,7 @@ app.put('/Cijfers/:id', (req, res) => {
 });
 //delete cijfers
 
-app.delete('/Cijfers/:id', (req, res) => {
+app.delete('/Cijfers/:id', apiKeyMiddleware, (req, res) => {
     const cijferId = req.params.id;
     db.query('DELETE FROM Cijfers WHERE CijferID = ?', [cijferId], (err, results) => {
         if (err) {
@@ -124,7 +140,7 @@ app.delete('/Cijfers/:id', (req, res) => {
 // Login endpoint voor studenten
 
 // Login endpoint voor studenten
-app.post('/studenten/login', (req, res) => {
+app.post('/studenten/login', apiKeyMiddleware, (req, res) => {
     const { email, wachtwoord } = req.body;
 
     console.log('Inloggen met email:', email); // Log de e-mail die wordt gebruikt om in te loggen
@@ -157,7 +173,7 @@ app.post('/studenten/login', (req, res) => {
     });
 });
 
-app.get('/Studenten', (req, res) => {
+app.get('/Studenten', apiKeyMiddleware, (req, res) => {
     console.log('Received request for /Studenten');
     db.query('SELECT * FROM Studenten', (err, results) => {
         if (err) {
@@ -170,7 +186,7 @@ app.get('/Studenten', (req, res) => {
 });
 
 // get student by id
-app.get('/Studenten/:id', (req, res) => {
+app.get('/Studenten/:id', apiKeyMiddleware, (req, res) => {
     const studentId = req.params.id;
     db.query('SELECT * FROM Studenten WHERE StudentID = ?', [studentId], (err, results) => {
         if (err) {
@@ -185,7 +201,7 @@ app.get('/Studenten/:id', (req, res) => {
 });
 
 // post student
-app.post('/Studenten', (req, res) => {
+app.post('/Studenten', apiKeyMiddleware, (req, res) => {
     const { Voornaam, Tussenvoegsel, Achternaam, Wachtwoord, Email, Geboortedatum, Adres, KlasID } = req.body;
 
     // Hash het wachtwoord
@@ -207,7 +223,7 @@ app.post('/Studenten', (req, res) => {
     });
 });
 // put student
-app.put('/Studenten/:id', (req, res) => {
+app.put('/Studenten/:id', apiKeyMiddleware, (req, res) => {
     const studentId = req.params.id;
     const { Voornaam, Tussenvoegsel, Achternaam, Wachtwoord, Email, Geboortedatum, Adres, KlasID } = req.body;
 
@@ -246,7 +262,7 @@ app.put('/Studenten/:id', (req, res) => {
     });
 });
 // delete student
-app.delete('/Studenten/:id', (req, res) => {
+app.delete('/Studenten/:id', apiKeyMiddleware, (req, res) => {
     const studentId = req.params.id;
     db.query('DELETE FROM Studenten WHERE StudentID = ?', [studentId], (err, results) => {
         if (err) {
@@ -261,7 +277,7 @@ app.delete('/Studenten/:id', (req, res) => {
 });
 
 // Post docent
-app.post('/docenten', (req, res) => {
+app.post('/docenten', apiKeyMiddleware, (req, res) => {
     const { Tussenvoegsel, Wachtwoord, Email, Voornaam, Vakgebied, Telefoonnummer, Achternaam } = req.body;
 
     // Hash het wachtwoord
@@ -285,7 +301,7 @@ app.post('/docenten', (req, res) => {
 });
 
 // Login endpoint voor docenten
-app.post('/docenten/login', (req, res) => {
+app.post('/docenten/login', apiKeyMiddleware, (req, res) => {
     const { email, wachtwoord } = req.body;
 
     console.log('Inloggen met email:', email); // Log de email die wordt gebruikt om in te loggen
@@ -321,7 +337,7 @@ app.post('/docenten/login', (req, res) => {
 
 
 // Endpoint om alle docenten op te halen
-app.get('/docenten', (req, res) => {
+app.get('/docenten', apiKeyMiddleware, (req, res) => {
     const query = 'SELECT * FROM Docenten';
     db.query(query, (err, results) => {
         if (err) {
@@ -332,7 +348,7 @@ app.get('/docenten', (req, res) => {
 });
 
 // Endpoint om een docent op te halen op basis van ID
-app.get('/docenten/:id', (req, res) => {
+app.get('/docenten/:id', apiKeyMiddleware, (req, res) => {
     const docentId = req.params.id;
     const query = 'SELECT * FROM Docenten WHERE DocentID = ?';
     db.query(query, [docentId], (err, results) => {
@@ -348,7 +364,7 @@ app.get('/docenten/:id', (req, res) => {
 
 
 // Endpoint om een bestaande docent bij te werken
-app.put('/docenten/:id', (req, res) => {
+app.put('/docenten/:id', apiKeyMiddleware, (req, res) => {
     const docentId = req.params.id;
     const { Voornaam, Tussenvoegsel, Wachtwoord, Email, Vakgebied, Telefoonnummer, Achternaam } = req.body; // Alle velden worden verwacht in de request body
 
@@ -386,7 +402,7 @@ app.put('/docenten/:id', (req, res) => {
     });
 });
 // Endpoint om een docent te verwijderen
-app.delete('/docenten/:id', (req, res) => {
+app.delete('/docenten/:id', apiKeyMiddleware, (req, res) => {
     const docentId = req.params.id;
     const query = 'DELETE FROM Docenten WHERE DocentID = ?';
     db.query(query, [docentId], (err, results) => {
@@ -403,7 +419,7 @@ app.delete('/docenten/:id', (req, res) => {
 
 
 
-app.get('/pivot_docentvakken', (req, res) => {
+app.get('/pivot_docentvakken', apiKeyMiddleware, (req, res) => {
     const query = 'SELECT * FROM pivot__docentvakken'; // SQL query to select all from Docenten
     db.query(query, (err, results) => {
         if (err) {
@@ -415,7 +431,7 @@ app.get('/pivot_docentvakken', (req, res) => {
 
 // get pivot by id
 
-app.get('/Rollen', (req, res) => {
+app.get('/Rollen', apiKeyMiddleware, (req, res) => {
     const query = 'SELECT * FROM Rollen'; // SQL query to select all from Docenten
     db.query(query, (err, results) => {
         if (err) {
@@ -425,7 +441,7 @@ app.get('/Rollen', (req, res) => {
     });
 });
 
-app.get('/klassen', (req, res) => {
+app.get('/klassen', apiKeyMiddleware, (req, res) => {
     const query = 'SELECT * FROM Klassen'; // SQL query to select all from Docenten
     db.query(query, (err, results) => {
         if (err) {
@@ -436,7 +452,7 @@ app.get('/klassen', (req, res) => {
 });
 
 //get klassen by id
-app.get('/Klassen/:id', (req, res) => {
+app.get('/Klassen/:id', apiKeyMiddleware, (req, res) => {
     const klasId = req.params.id;
     db.query('SELECT * FROM Klassen WHERE KlasID = ?', [klasId], (err, results) => {
         if (err) {
@@ -451,7 +467,7 @@ app.get('/Klassen/:id', (req, res) => {
 });
 
 // post klassen by id
-app.post('/Klassen', (req, res) => {
+app.post('/Klassen', apiKeyMiddleware, (req, res) => {
     const { KlasNaam, Leerjaar } = req.body;
 
     const insertQuery = 'INSERT INTO Klassen (KlasNaam, Leerjaar) VALUES (?, ?)';
@@ -464,7 +480,7 @@ app.post('/Klassen', (req, res) => {
     });
 });
 // put klassen by id
-app.put('/Klassen/:id', (req, res) => {
+app.put('/Klassen/:id', apiKeyMiddleware, (req, res) => {
     const klasId = req.params.id;
     const { KlasNaam, Leerjaar } = req.body;
 
@@ -498,7 +514,7 @@ app.put('/Klassen/:id', (req, res) => {
 });
 
 // delete klassen by id
-app.delete('/Klassen/:id', (req, res) => {
+app.delete('/Klassen/:id', apiKeyMiddleware, (req, res) => {
     const klasId = req.params.id;
     db.query('DELETE FROM Klassen WHERE KlasID = ?', [klasId], (err, results) => {
         if (err) {
@@ -518,7 +534,7 @@ app.delete('/Klassen/:id', (req, res) => {
 
 
 
-app.get('/vakken', (req, res) => {
+app.get('/vakken', apiKeyMiddleware, (req, res) => {
     const query = 'SELECT * FROM Vakken'; // SQL query to select all from Docenten
     db.query(query, (err, results) => {
         if (err) {
@@ -528,7 +544,7 @@ app.get('/vakken', (req, res) => {
     });
 });
 
-app.get('/logs', (req, res) => {
+app.get('/logs', apiKeyMiddleware, (req, res) => {
     const query = 'SELECT * FROM Logs'; // SQL query to select all from Docenten
     db.query(query, (err, results) => {
         if (err) {
