@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Gegenereerd op: 06 dec 2024 om 13:58
+-- Gegenereerd op: 11 dec 2024 om 10:28
 -- Serverversie: 10.4.32-MariaDB
 -- PHP-versie: 8.2.12
 
@@ -294,7 +294,7 @@ ALTER TABLE `cijfers`
 -- AUTO_INCREMENT voor een tabel `docenten`
 --
 ALTER TABLE `docenten`
-  MODIFY `DocentID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `DocentID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT voor een tabel `klassen`
