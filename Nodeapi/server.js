@@ -9,7 +9,7 @@ require('dotenv').config();
 
 
 const corsOptions = {
-    origin: 'http://localhost:3000', // Specifieke origin
+    origin: 'http://localhost:*', // Specifieke origin
     credentials: true 
   };
 
@@ -17,22 +17,32 @@ const app = express();
 app.use(cors(corsOptions)); // To allow cross-origin requests
 app.use(express.json()); // To parse JSON bodies
 
-const studentenRoutes = require('./routes/studenten');
-app.use('/studenten', studentenRoutes);
-const docentenRoutes = require('./routes/docenten');
-app.use('/docenten', docentenRoutes);
-const cijfersRoutes = require('./routes/cijfers');
-app.use('/cijfers', cijfersRoutes);
-const klassenRoutes = require('./routes/klassen');
-app.use('/klassen', klassenRoutes);
-const vakkenRoutes = require('./routes/vakken');
-app.use('/vakken', vakkenRoutes);
-const logsRoutes = require('./routes/logs');
-app.use('/logs', logsRoutes);
-const rollenRoutes = require('./routes/rollen');
-app.use('/rollen', rollenRoutes);
-const pivot__docentvakkenRoutes = require('./routes/pivot__docentvakken');
-app.use('/pivot__docentvakken', pivot__docentvakkenRoutes);
+const studentencontroller = require('./controllers/studenten');
+app.use('/studenten', studentencontroller);
+
+const docentencontroller = require('./controllers/docenten');
+app.use('/docenten', docentencontroller);
+
+const cijferscontroller = require('./controllers/cijfers');
+app.use('/cijfers', cijferscontroller);
+
+const klassencontroller = require('./controllers/klassen');
+app.use('/klassen', klassencontroller);
+
+const vakkencontroller = require('./controllers/vakken');
+app.use('/vakken', vakkencontroller);
+
+const logscontroller = require('./controllers/logs');
+app.use('/logs', logscontroller);
+
+const rollencontroller = require('./controllers/rollen');
+app.use('/rollen', rollencontroller);
+
+const pivot__docentvakkencontroller = require('./controllers/pivot__docentvakken');
+app.use('/pivot__docentvakken', pivot__docentvakkencontroller);
+
+const pdfcontroller = require('./controllers/studentController');
+app.use('/studentController', pdfcontroller);
 
 
 // Start the server
